@@ -52,12 +52,12 @@ makeFieldsNoPrefix ''ObjectSpec
 
 -- << Fully loaded Data units
 data EntityData = EntityData { _stats :: EntityStats
-                             , _pic   :: IO Picture
+                             , _pic   :: Picture
                              } 
 makeFieldsNoPrefix ''EntityData
 
 data ObjectData = ObjectData { _stats :: ObjectStats
-                             , _pic   :: IO Picture
+                             , _pic   :: Picture
                              } 
 makeFieldsNoPrefix ''ObjectData
 -- >>

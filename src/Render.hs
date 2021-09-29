@@ -23,34 +23,34 @@ mapPos2ScreenPos (x, y) = ( fst leftUpperScreenPos + int2Float (x * xCell)
                           , snd leftUpperScreenPos + int2Float (y * yCell))
 
 world2Picture :: World -> IO Picture
-world2Picture w = do
-   mapPic <- thingsMap2Pic w
-   let gridPic = grid (int2Float xCell) (int2Float yCell)
-   return $ gridPic <> (playerPlannedMove w)  <> mapPic <> (tickRep w) <> (timeLine w)
+world2Picture w = return $ gridPic <> (playerPlannedMove w)  <> mapPic <> (tickRep w) <> (timeLine w)
+   where 
+         mapPic = thingsMap2Pic w
+         gridPic = grid (int2Float xCell) (int2Float yCell)
    
 tickRep :: World -> Picture
 tickRep w = Scale 0.1 0.1 $ Text $ show $ w ^. tick
 
 
-thingsMap2Pic :: World -> IO Picture
+thingsMap2Pic :: World -> Picture
 thingsMap2Pic w = vectors2Pic
                 $ fmap (fmap $ thingsListID2Pic w) $ w ^. level.thingsMap
 
-vectors2Pic :: Vector (Vector (IO Picture)) -> IO Picture
+vectors2Pic :: Vector (Vector (Picture)) -> Picture
 vectors2Pic vec = concatFoldableIOPic $ fmap concatFoldableIOPic vec
 
-thingsListID2Pic :: World -> [ThingID] -> IO Picture
+thingsListID2Pic :: World -> [ThingID] -> Picture
 thingsListID2Pic w things = concatFoldableIOPic
                           $ fmap (thingID2Pic w) things
 
-thingID2Pic :: World -> ThingID -> IO Picture
+thingID2Pic :: World -> ThingID -> Picture
 thingID2Pic w (EntityID x) = entity2Pic w e
    where e = flip (!) x $ w ^. level.levelEntities
 thingID2Pic w (ObjectID x) = object2Pic w o
    where o = flip (!) x $ w ^. level.levelObjects
 
-entity2Pic :: World -> Entity -> IO Picture
-entity2Pic w e = fmap (Translate x y)
+entity2Pic :: World -> Entity -> Picture
+entity2Pic w e = (Translate x y)
                $ ePic
    where (x, y) = mapPos2ScreenPos ePos
          ePos = e ^. status.position
@@ -60,8 +60,8 @@ entity2Pic w e = fmap (Translate x y)
 
 object2Pic = undefined
 
-concatFoldableIOPic :: (Foldable t) => t (IO Picture) -> IO Picture
-concatFoldableIOPic = foldr (concatIOPic) (return Blank)
+concatFoldableIOPic :: (Foldable t) => t (Picture) -> Picture
+concatFoldableIOPic = foldr (<>) Blank
 
 concatIOPic :: IO Picture -> IO Picture -> IO Picture
 concatIOPic p1 p2 = (fmap (<>) p1) <*> p2
