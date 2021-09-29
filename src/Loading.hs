@@ -11,11 +11,8 @@ import RunTimeData
 import EntityObjectLoading
 import EntityObjectSpec
 
-
-initialWorld = initialWorld' `seq` initialWorld'
-
-initialWorld' :: World 
-initialWorld' = World playerStart testLevel [] loadAllData 0 initialWorldState
+initialWorld :: IO World 
+initialWorld = loadAllData >>= \initWorld -> return $ World playerStart testLevel [] initWorld 0 initialWorldState
 
 initialWorldState :: WorldState
 initialWorldState = WorldState turnTime False True

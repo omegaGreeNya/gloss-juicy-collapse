@@ -17,12 +17,10 @@ import RunTimeData (fps)
 
 -- exitWith
 main :: IO ()
-main = gameLoop >> print "Get Out!"
+main = initialWorld >>= gameLoop >> print "Get Out!"
 
-gameLoop :: IO ()
-gameLoop = do
-   let initialWorld'' = initialWorld
-   playIO window background fps (initialWorld'') (world2Picture `seq` world2Picture) (event2Update `seq` event2Update) (time2Update `seq` time2Update)
+gameLoop :: World -> IO ()
+gameLoop initialWorld = playIO window background fps initialWorld world2Picture event2Update time2Update
 
 
 {-

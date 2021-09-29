@@ -9,28 +9,28 @@ import PictureLoading
 
 
 
-loadAllData :: AllData
+loadAllData :: IO AllData
 loadAllData = loadAllData'
 
-loadAllData' :: AllData
-loadAllData' = AllData (loadEntities entities2Load) (loadObjects objects2Load)
+loadAllData' :: IO AllData
+loadAllData' = AllData <$> (loadEntities entities2Load) <*> (loadObjects objects2Load)
 
-loadEntities :: EntitiesSpec -> EntitiesData
-loadEntities esSpec = Vector.fromList $ map eSpec2Data esSpec
+loadEntities :: EntitiesSpec -> IO EntitiesData
+loadEntities esSpec = traverse eSpec2Data esSpec >>= return . Vector.fromList 
    where
-         eSpec2Data :: EntitySpec -> EntityData
-         eSpec2Data eSpec = EntityData eStats ePic
+         eSpec2Data :: EntitySpec -> IO EntityData
+         eSpec2Data eSpec = ePic >>= (\ePic -> return $ EntityData eStats ePic)
             where
                eStats = eSpec ^. stats
                ePic = loadPicPNG' ePicPath
                
                ePicPath = eSpec ^. picPath
 
-loadObjects :: ObjectsSpec -> ObjectsData
-loadObjects osSpec = Vector.fromList $ map oSpec2Data osSpec
+loadObjects :: ObjectsSpec -> IO ObjectsData
+loadObjects osSpec = traverse oSpec2Data osSpec >>= return . Vector.fromList
    where
-         oSpec2Data :: ObjectSpec -> ObjectData
-         oSpec2Data oSpec = ObjectData oStats oPic
+         oSpec2Data :: ObjectSpec -> IO ObjectData
+         oSpec2Data oSpec = oPic >>= (\oPic -> return $ ObjectData oStats oPic)
             where
                oPic = loadPicPNG' oPicPath
                
