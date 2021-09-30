@@ -15,12 +15,10 @@ execPlans w = processPlans w plans
          processPlans w (p:ps) = processPlans (applyPlan w p) ps
    
    
--- GOVNOKOD ALLERT
+-- Much better looks with 'withID' class.
 applyPlan :: World -> Actions -> World
 applyPlan w [] = w
-applyPlan w ((Action (EntityID x) eAct _):acts) = applyPlan (w & targetLens %~ eAct) acts
-   where targetLens = level.levelEntities.ix x.status
-
-applyPlan w ((Action (ObjectID x) _ oAct):acts) = applyPlan (w & targetLens %~ oAct) acts
-   where targetLens = level.levelObjects.ix x.status
+applyPlan w ((Action tID eAct oAct):acts) = applyPlan (wUpdate tID) acts
+   where wUpdate (EntityID _) = w & withIDStatus tID %~ eAct 
+         wUpdate (ObjectID _) = w & withIDStatus tID %~ oAct
          

@@ -3,6 +3,8 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module GameData where
 
@@ -10,6 +12,7 @@ import Data.Text (Text)
 --import Graphics.Gloss.Data.Picture
 import Control.Lens
 import Data.Vector (Vector)
+import Data.Maybe (fromJust)
 
 import EntityObjectSpec
 import RunTimeData
@@ -52,6 +55,25 @@ data World = World { _player :: Player
                    , _worldState :: WorldState
                    } 
 makeLenses ''World
+
+
+-- Class module?
+-- Better naming?
+class WithID b where
+   withIDStatus :: ThingID -> Lens' World b
+
+instance WithID EntityStatus where
+   withIDStatus :: ThingID -> Lens' World EntityStatus
+   withIDStatus (EntityID x) = lens getter setter 
+      where getter w = fromJust $ w ^? level.levelEntities.ix x.status
+            setter w es = w & level.levelEntities.ix x.status .~ es
+
+instance WithID ObjectStatus where
+   withIDStatus :: ThingID -> Lens' World ObjectStatus
+   withIDStatus (ObjectID x) = lens getter setter 
+      where getter w = fromJust $ w ^? level.levelObjects.ix x.status
+            setter w os = w & level.levelObjects.ix x.status .~ os
+
 
 -- Separate below???
 
