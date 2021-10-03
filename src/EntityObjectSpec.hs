@@ -22,7 +22,7 @@ import ActionsData
 -- << Ent/Obj description
 data EntityStats = EntityStats { _getID       :: Int
                                , _defaultName :: Text
-                               --, _entityMaxHP       :: Int
+                               , _maxHP       :: Int
                                --, _entityStates      :: States
                                --, _aiID :: Int
                                } deriving Show
@@ -30,7 +30,7 @@ makeFieldsNoPrefix ''EntityStats
 
 data ObjectStats = ObjectStats { _getID       :: Int
                                , _defaultName :: Text
-                               --, _objectMaxHP       :: Int
+                               , _maxHP       :: Int
                                --, _entityStates      :: States
                                } deriving Show
 makeFieldsNoPrefix ''ObjectStats
@@ -83,7 +83,7 @@ makeLenses ''AllData
 -----------------------Loading Info----------------------------
 
 entities2Load :: EntitiesSpec
-entities2Load = [playerSpec]
+entities2Load = [playerSpec, dummy]
 
 objects2Load  :: ObjectsSpec
 objects2Load  = []
@@ -93,5 +93,10 @@ objects2Load  = []
 
 playerSpec :: EntitySpec
 playerSpec = EntitySpec playerStats playerPic
-   where playerStats = EntityStats 0 "Player"
+   where playerStats = EntityStats 0 "Player" 100
          playerPic = "data/tiles/player/extraPain.png"
+
+dummy :: EntitySpec
+dummy = EntitySpec playerStats playerPic
+   where playerStats = EntityStats 1 "Dummy" 100
+         playerPic = "undefined"

@@ -29,6 +29,7 @@ library
       EntityObjectLoading
       EntityObjectSpec
       GameData
+      HitData
       Input
       Lib
       Loading

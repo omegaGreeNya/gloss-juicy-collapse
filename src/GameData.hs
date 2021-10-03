@@ -13,6 +13,7 @@ import Data.Text (Text)
 import Control.Lens
 import Data.Vector (Vector)
 import Data.Maybe (fromJust)
+import Data.Set (Set)
 
 import EntityObjectSpec
 import RunTimeData
@@ -20,7 +21,7 @@ import ActionsData
 
 data Entity = Entity { _dataID         :: Int
                      , _status         :: EntityStatus
-                     , _plannedActions :: Actions
+                     , _plannedActions :: Action
                      } 
 makeFieldsNoPrefix ''Entity
 
@@ -29,12 +30,12 @@ data Object = Object { _dataID :: Int
                      } 
 makeFieldsNoPrefix ''Object
 
-data Map = Map { _thingsMap     :: Vector (Vector [ThingID])  -- 2D array of !this level! things IDs
-               , _levelEntities :: Vector Entity              -- AI/Player specIDs and statuses
-               , _levelObjects  :: Vector Object              -- Walls/Floors/etc. - everything unactionable
+data Map = Map { _thingsMap     :: Vector (Vector (Set ThingID))  -- 2D array of !this level! things IDs
+               , _levelEntities :: Vector Entity                 -- AI/Player specIDs and statuses
+               , _levelObjects  :: Vector Object                 -- Walls/Floors/etc. - everything unactionable
                , _xSize         :: Int
                , _ySize         :: Int
-               } 
+               }
 makeLenses ''Map
 
 data Player = Player { _playerEntity :: Entity
@@ -57,23 +58,32 @@ data World = World { _player :: Player
 makeLenses ''World
 
 
--- Class module?
--- Better naming?
-class WithID b where
+-- Class module? Naah..
+class WithLevelID b where
    withIDStatus :: ThingID -> Lens' World b
 
-instance WithID EntityStatus where
+instance WithLevelID EntityStatus where
    withIDStatus :: ThingID -> Lens' World EntityStatus
    withIDStatus (EntityID x) = lens getter setter 
       where getter w = fromJust $ w ^? level.levelEntities.ix x.status
             setter w es = w & level.levelEntities.ix x.status .~ es
 
-instance WithID ObjectStatus where
+instance WithLevelID ObjectStatus where
    withIDStatus :: ThingID -> Lens' World ObjectStatus
    withIDStatus (ObjectID x) = lens getter setter 
       where getter w = fromJust $ w ^? level.levelObjects.ix x.status
             setter w os = w & level.levelObjects.ix x.status .~ os
 
+
+unsafeEntityByID :: ThingID -> Lens' World Entity
+unsafeEntityByID (EntityID x) = lens getter setter
+   where getter w = fromJust $ w ^? level.levelEntities.ix x
+         setter w e = w & level.levelEntities.ix x .~ e
+
+unsafeObjectByID :: ThingID -> Lens' World Object
+unsafeObjectByID (ObjectID x) = lens getter setter
+   where getter w = fromJust $ w ^? level.levelObjects.ix x
+         setter w o = w & level.levelObjects.ix x .~ o
 
 -- Separate below???
 
