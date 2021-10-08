@@ -1,6 +1,9 @@
--- | Probably, there is a bug with processZone!!!!!!!!!!!!!!!!!!!!!
-
-module Logic where
+module Logic ( applyHitsBeforeMoves
+             , applyMoves
+             , applyHitsAfterMoves
+             , resetActions
+             , applyMove
+             ) where
 
 import Control.Lens
 import Data.Foldable (foldl')
@@ -8,23 +11,20 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (length)
 import qualified Data.Set as Set (delete, insert)
 import Data.Maybe (fromJust)
-import GHC.Float (int2Double)
+import GHC.Float (int2Float)
 
-import GameData
-import RunTimeData
-import ActionsData
-import HitData
+import DataFunctions
 
 execPlans :: World -> World
 execPlans = resetActions . applyHitsAfterMoves . applyMoves . applyHitsBeforeMoves
    
    
 resetActions :: World -> World
-resetActions w = w & level.levelEntities.traversed.plannedActions .~ noneAct
+resetActions w = w & level.levelEntities.traversed.plannedAct .~ noneAct
 
 applyHitsBeforeMoves :: World -> World
 applyHitsBeforeMoves w = foldl' applyHitBox w hitBoxes
-   where hitBoxes = w ^.. level.levelEntities.folded.plannedActions.attacks.folded._1
+   where hitBoxes = w ^.. level.levelEntities.folded.plannedAct.attacks.folded._1
 
 applyMoves :: World -> World
 applyMoves w = applyMoves' w 0 entNumber
@@ -33,7 +33,7 @@ applyMoves w = applyMoves' w 0 entNumber
 
 applyHitsAfterMoves :: World -> World
 applyHitsAfterMoves w = foldl' applyHitBox w hitBoxes
-   where hitBoxes = w ^.. level.levelEntities.folded.plannedActions.attacks.folded._2
+   where hitBoxes = w ^.. level.levelEntities.folded.plannedAct.attacks.folded._2
 
 
 applyMoves' :: World -> Int -> Int -> World
@@ -42,7 +42,7 @@ applyMoves' w i maxi | i == maxi = newW
    where maybeE = w ^? level.levelEntities.ix i
          e = fromJust maybeE
          
-         maybeMove = e ^. plannedActions.move
+         maybeMove = e ^. plannedAct.move
          (x, y) = e ^. status.position
          
          applyMaybeMove (Nothing)    = e
@@ -59,9 +59,9 @@ applyMoves' w i maxi | i == maxi = newW
          
          newW = newW' maybeE
 
-applyMove :: Entity -> Entity
+applyMove :: Thing -> Thing
 applyMove e = applyMaybeMove maybeMove
-   where maybeMove = e ^. plannedActions.move
+   where maybeMove = e ^. plannedAct.move
          applyMaybeMove (Nothing)    = e
          applyMaybeMove (Just shift) = e & status.position %~ moveByShift shift
          
@@ -76,10 +76,10 @@ applyHitBox w (SimpleHitBox p1 p2 dmgRNG) = applySimpleHitBox w p1 p2 dmgRNG
 applyHitBox w (CellBox hcs dmgRNG) = applyCellBox w hcs dmgRNG
 
 applySimpleHitBox :: World -> Position -> Position -> DamageRNG -> World
-applySimpleHitBox w p1 p2 dmgRNG = processZone w p1 p2 hitAction
+applySimpleHitBox w p1 p2 dmgRNG = processZone w (p1, p2) hitAction
    where hitAction w tID@(EntityID _) = w & unsafeEntityByID tID.status %~ eDmg
          hitAction w _                = w
-         eDmg :: EntityStatus -> EntityStatus
+         eDmg :: Status -> Status
          eDmg es = es & hp -~ (getRNG dmgRNG)
 -- | Im feeling bad about using withIDStatus above :( it's too ambiguous
 
@@ -92,40 +92,16 @@ applyHitCell dmgRNG w (HitCell (hitX, hitY) hDir scale) = foldl' hitAction w tar
          
          dmg = getRNG dmgRNG
          
-         shiftDir :: Entity -> Direction
-         shiftDir e = mShift2Dir $ e ^. plannedActions.move
+         shiftDir :: Thing -> Direction
+         shiftDir e = mShift2Dir $ e ^. plannedAct.move
          resultDirScale e = dirScale hDir (shiftDir e)
          finalDmg e = (1 + resultDirScale e) * scale * dmg                                    -- HIT SCALE FORMULA (sepparate to another module?)
          
-         eDmg :: Entity -> Entity
+         eDmg :: Thing -> Thing
          eDmg e = e & status.hp -~ finalDmg e
          
          hitAction w tID@(EntityID _) = w & unsafeEntityByID tID %~ eDmg
          hitAction w _ = w
-         
-   
 
-processZone :: World                       -- World to apply
-            -> Position                    -- Left upper corner of zone
-            -> Position                    -- Max x and y
-            -> (World -> ThingID -> World) -- updating world on ThingID
-            -> World                       -- result of applying actions on every ThingID in zone
-processZone w (xmin, ymin) (xmax, ymax) action = processZone' w xmin ymin xmin ymin xmax ymax action
-
-processZone' :: World                       -- World to apply
-             -> Int                         -- Current width pos (x)
-             -> Int                         -- Current height pos (y)
-             -> Int                         -- min x
-             -> Int                         -- min y
-             -> Int                         -- max x
-             -> Int                         -- max y
-             -> (World -> ThingID -> World) -- updating world on ThingID
-             -> World                       -- result of applying actions on every ThingID in zone
-processZone' w x y xmin ymin xmax ymax action | x < xmax = processZone' newW (x + 1) y xmin ymin xmax ymax action
-                                              | y < ymax = processZone' newW xmin (y + 1) xmin ymin xmax ymax action
-                                              | otherwise = newW
-   where newW = foldl' action w targetThingsIDs
-         targetThingsIDs = w ^. level.thingsMap.ix x.ix y
-
-getRNG :: DamageRNG -> Double
-getRNG (x, _) = int2Double x
+getRNG :: DamageRNG -> Float
+getRNG (x, _) = int2Float x

@@ -19,59 +19,75 @@ import Data.IORef
 
 import ActionsData
 
--- << Ent/Obj description
-data EntityStats = EntityStats { _getID       :: Int
-                               , _defaultName :: Text
-                               , _maxHP       :: Int
-                               --, _entityStates      :: States
-                               --, _aiID :: Int
-                               } deriving Show
-makeFieldsNoPrefix ''EntityStats
+data DataID = EntityDataID Int
+            | ObjectDataID Int
 
-data ObjectStats = ObjectStats { _getID       :: Int
-                               , _defaultName :: Text
-                               , _maxHP       :: Int
-                               --, _entityStates      :: States
-                               } deriving Show
-makeFieldsNoPrefix ''ObjectStats
+-- << Ent/Obj description
+data ThingStats = EntityStats { _getID       :: Int
+                              , _defaultName :: Text
+                              , _maxHP       :: Int
+                              --, _entityStates      :: States
+                              --, _aiID :: Int
+                              } 
+                | ObjectStats { _getID       :: Int
+                              , _defaultName :: Text
+                              , _maxHP       :: Int
+                              --, _entityStates      :: States
+                              }
+makeLenses ''ThingStats
 
 -- >>
 
 
 -- << Data Loading information
-data EntitySpec = EntitySpec { _stats   :: EntityStats
-                             , _picPath :: FilePath
-                             } deriving Show
-makeFieldsNoPrefix ''EntitySpec
-
-data ObjectSpec = ObjectSpec { _stats   :: ObjectStats
-                             , _picPath :: FilePath
-                             } deriving Show
-makeFieldsNoPrefix ''ObjectSpec
+data ThingSpec = EntitySpec { stats   :: ThingStats
+                            , _picPath :: FilePath
+                            }
+               | ObjectSpec { stats   :: ThingStats
+                            , _picPath :: FilePath
+                            }
+makeLenses ''ThingSpec
 -- >>
 
 -- << Fully loaded Data units
-data EntityData = EntityData { _stats :: EntityStats
-                             , _pic   :: Picture
-                             } 
-makeFieldsNoPrefix ''EntityData
+data ThingData = EntityData { stats :: ThingStats
+                            , _pic   :: Picture
+                            } 
+               | ObjectData { stats :: ThingStats
+                            , _pic   :: Picture
+                            } 
+makeLenses ''ThingData
+-- >>
 
-data ObjectData = ObjectData { _stats :: ObjectStats
-                             , _pic   :: Picture
-                             } 
-makeFieldsNoPrefix ''ObjectData
+-- <<
+class HasStats s a | s -> a where 
+   stat :: Lens' s a
+
+instance HasStats ThingSpec ThingStats where
+   stat = lens getter setter
+      where getter (EntitySpec st _) = st
+            getter (ObjectSpec st _) = st
+            setter (EntitySpec _  p) st = EntitySpec st p
+            setter (ObjectSpec _  p) st = ObjectSpec st p
+
+instance HasStats ThingData ThingStats where 
+   stat = lens getter setter
+      where getter (EntityData st _) = st
+            getter (ObjectData st _) = st
+            setter (EntityData _  p) st = EntityData st p
+            setter (ObjectData _  p) st = ObjectData st p
 -- >>
 
 -- << Representation of loading data
-type EntitiesSpec = [EntitySpec]
+type EntitiesSpec = [ThingSpec]
 
-type ObjectsSpec = [ObjectSpec]
+type ObjectsSpec = [ThingSpec]
 -- >>
 
 -- << Representation of loaded data
-type EntitiesData = Vector EntityData
+type EntitiesData = Vector ThingData
 
-type ObjectsData = Vector ObjectData
+type ObjectsData = Vector ThingData
 
 data AllData = AllData { _entities :: EntitiesData
                        , _objects  :: ObjectsData
@@ -91,12 +107,12 @@ objects2Load  = []
 
 -----------------------Loading Bits----------------------------
 
-playerSpec :: EntitySpec
+playerSpec :: ThingSpec
 playerSpec = EntitySpec playerStats playerPic
    where playerStats = EntityStats 0 "Player" 100
          playerPic = "data/tiles/player/extraPain.png"
 
-dummy :: EntitySpec
+dummy :: ThingSpec
 dummy = EntitySpec playerStats playerPic
    where playerStats = EntityStats 1 "Dummy" 100
          playerPic = "undefined"

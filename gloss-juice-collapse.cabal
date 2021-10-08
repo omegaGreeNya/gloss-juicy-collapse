@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       ActionsData
+      DataFunctions
       EntityObjectLoading
       EntityObjectSpec
       GameData
@@ -37,6 +38,8 @@ library
       PictureLoading
       Render
       RunTimeData
+      ScreenData
+      ScreenUpdate
       Time2Update
   other-modules:
       Paths_gloss_juice_collapse

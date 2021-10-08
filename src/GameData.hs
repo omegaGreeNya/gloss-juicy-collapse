@@ -14,39 +14,59 @@ import Control.Lens
 import Data.Vector (Vector)
 import Data.Maybe (fromJust)
 import Data.Set (Set)
+import GHC.Float (int2Float)
 
 import EntityObjectSpec
 import RunTimeData
 import ActionsData
+import ScreenData
 
-data Entity = Entity { _dataID         :: Int
-                     , _status         :: EntityStatus
-                     , _plannedActions :: Action
-                     } 
-makeFieldsNoPrefix ''Entity
+data Thing = Entity { _dataID         :: DataID
+                    , _status         :: Status
+                    , plannedActions  :: Action
+                    , _renderData     :: ThingR
+                    } 
+           | Object { _dataID :: DataID
+                    , _status :: Status
+                    , _renderData :: ThingR
+                    } 
+makeLenses ''Thing
 
-data Object = Object { _dataID :: Int
-                     , _status :: ObjectStatus
-                     } 
-makeFieldsNoPrefix ''Object
+plannedAct :: Lens' Thing Action
+plannedAct = lens getter setter
+   where getter t@(Entity _ _ _ _)       = plannedActions t
+         getter t@(Object _ _ _)         = noneAct
+         setter (Entity dID st _ rD) act = Entity dID st act rD
+         setter t@(Object _ _ _) _       = t
 
 data Map = Map { _thingsMap     :: Vector (Vector (Set ThingID))  -- 2D array of !this level! things IDs
-               , _levelEntities :: Vector Entity                 -- AI/Player specIDs and statuses
-               , _levelObjects  :: Vector Object                 -- Walls/Floors/etc. - everything unactionable
-               , _xSize         :: Int
-               , _ySize         :: Int
+               , _levelEntities :: Vector Thing                   -- AI/Player specIDs and statuses
+               , _levelObjects  :: Vector Thing                   -- Walls/Floors/etc. - everything unactionable
+               , _levelSize       :: (Int, Int)
                }
 makeLenses ''Map
 
-data Player = Player { _playerEntity :: Entity
+data Player = Player { _playerEntityID :: ThingID
                      } 
 makeLenses ''Player
 
-data WorldState = WorldState { _leftedTurnTicks :: Tick
-                             , _playerMadeMove  :: Bool
-                             , _extraTimeLeft   :: Bool
+data State = BeforeMoves
+           | Moves
+           | AfterMoves
+           | PlayerThinkTime1
+           | PlayerThinkTime2
+            deriving (Show, Eq, Enum, Bounded)
+
+data WorldState = WorldState { _leftedPhaseTicks :: Tick
+                             , _playerMadeMove   :: Bool
+                             , _state            :: State
                              }
 makeLenses ''WorldState
+
+data UI = UI { _windowSize :: (Int, Int)
+             , _tps        :: Int
+             }
+makeLenses ''UI
 
 data World = World { _player :: Player
                    , _level    :: Map
@@ -54,45 +74,7 @@ data World = World { _player :: Player
                    , _allData :: AllData
                    , _tick :: Tick
                    , _worldState :: WorldState
+                   , _ui         :: UI
+                   , _camera :: Camera
                    } 
 makeLenses ''World
-
-
--- Class module? Naah..
-class WithLevelID b where
-   withIDStatus :: ThingID -> Lens' World b
-
-instance WithLevelID EntityStatus where
-   withIDStatus :: ThingID -> Lens' World EntityStatus
-   withIDStatus (EntityID x) = lens getter setter 
-      where getter w = fromJust $ w ^? level.levelEntities.ix x.status
-            setter w es = w & level.levelEntities.ix x.status .~ es
-
-instance WithLevelID ObjectStatus where
-   withIDStatus :: ThingID -> Lens' World ObjectStatus
-   withIDStatus (ObjectID x) = lens getter setter 
-      where getter w = fromJust $ w ^? level.levelObjects.ix x.status
-            setter w os = w & level.levelObjects.ix x.status .~ os
-
-
-unsafeEntityByID :: ThingID -> Lens' World Entity
-unsafeEntityByID (EntityID x) = lens getter setter
-   where getter w = fromJust $ w ^? level.levelEntities.ix x
-         setter w e = w & level.levelEntities.ix x .~ e
-
-unsafeObjectByID :: ThingID -> Lens' World Object
-unsafeObjectByID (ObjectID x) = lens getter setter
-   where getter w = fromJust $ w ^? level.levelObjects.ix x
-         setter w o = w & level.levelObjects.ix x .~ o
-
--- Separate below???
-
-xCell :: Int
-xCell = 100
-yCell :: Int
-yCell = 100
-
-xWindow :: Int
-xWindow = 800
-yWindow :: Int
-yWindow = 600

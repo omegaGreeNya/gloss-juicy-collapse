@@ -27,37 +27,6 @@ data HitBox = SimpleHitBox { _pos1 :: Position
                       , _dmgRNG :: DamageRNG
                       }
             | None
-            -- | I need to find a proper way of making hitbox scaling with directions
-            {-
-            HitBox { _pos1       :: Position  -- \
-                     , _pos2       :: Position  -- |> hit zone
-                     , _sourceVec  :: PosDir    -- hit derection norm. vector
-                     , _shiftScale :: Int       -- how much position shift affects damage (1 = 25%) (0 - doesn't affect) (-1 = -25% ?)
-                     , _dmgRNG   :: damageRNG -- damage interval
-                     }
-            -}
 makeFieldsNoPrefix ''HitBox
 
 type PlannedAttack = (HitBox, HitBox) -- hit before moving and after
-
-{-
--- | Damage scales from fighters move.
-damageCalc :: PosDir     -- Attack direction
-           -> PosShift   -- defender move vector
-           -> damageRNG 
-           -> Int        -- resulting damage
-damageCalc aShift dShidt dmgInterval = round $ scale * dmg
-   where scale = dmgScale
-         dmg = int2Float $ fst dmgInterval
-   
-dmgScale :: PosDir   -- Attack direction
-         -> PosShift -- Defender shift
-         -> Double
-         -> Double
-dmgScale aDir@(x1, y1) dShift@(x2, y2) scale = scale * 
-   where resVec = shiftDiff aShift dShift
-         
-         shiftDiff (x1, y1) (x2, y2) = (x2 - x1, y2 - y1)
-         
-         normalizedAShift = 
--}

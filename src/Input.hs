@@ -6,35 +6,44 @@ import Data.Maybe (fromJust)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Loading
-import GameData
-import RunTimeData
-import ActionsData
-import HitData
+import DataFunctions
+
+itsPlayerTurn :: World -> Bool
+itsPlayerTurn w = case w ^. worldState.state of
+                       PlayerThinkTime1 -> True
+                       PlayerThinkTime2 -> True
+                       _                -> False
 
 event2Update :: Event -> World -> IO World
-event2Update (EventKey (SpecialKey KeyRight) Down  _ _) w = movePlayer (1, 0) w
-event2Update (EventKey (SpecialKey KeyLeft)  Down  _ _) w = movePlayer (-1, 0) w
-event2Update (EventKey (SpecialKey KeyUp)    Down  _ _) w = movePlayer (0, -1) w
-event2Update (EventKey (SpecialKey KeyDown)  Down  _ _) w = movePlayer (0, 1) w
-event2Update (EventKey (SpecialKey KeyEsc)   Down  _ _) w = exitWith ExitSuccess
-event2Update (EventKey (Char  'a'         )  Down  _ _) w = playerTestAttack w
-event2Update _ w = return w
+event2Update e w = if itsPlayerTurn w 
+                     then event2Update_ e w
+                     else return w 
+
+event2Update_ :: Event -> World -> IO World
+event2Update_ (EventKey (SpecialKey KeyRight) Down  _ _) w = movePlayer (1, 0) w
+event2Update_ (EventKey (SpecialKey KeyLeft)  Down  _ _) w = movePlayer (-1, 0) w
+event2Update_ (EventKey (SpecialKey KeyUp)    Down  _ _) w = movePlayer (0, -1) w
+event2Update_ (EventKey (SpecialKey KeyDown)  Down  _ _) w = movePlayer (0, 1) w
+event2Update_ (EventKey (SpecialKey KeyEsc)   Down  _ _) w = exitWith ExitSuccess
+event2Update_ (EventKey (Char  'a'         )  Down  _ _) w = playerTestAttack w
+event2Update_ _ w = return w
 
 
 playerLevelID = 0
 
 movePlayer :: PosShift -> World -> IO World
-movePlayer posShift w = return $ playerMoveMade $ w & level.levelEntities.ix playerLevelID.plannedActions %~ updateAct
+movePlayer posShift w = return $ playerMoveMade $ w & unsafeThingByID pID.plannedAct %~ updateAct
    where updateAct act = act & move .~ (Just posShift)
+         pID = w ^. player.playerEntityID
 
 playerMoveMade :: World -> World
 playerMoveMade w = w & worldState.playerMadeMove .~ True
 
 playerTestAttack :: World -> IO World
-playerTestAttack w = return $ playerMoveMade $ w & level.levelEntities.ix playerLevelID.plannedActions %~ setAttack
-   where setAttack act = act & attacks .~ [testAttack pPos]
-         
-         pPos = fromJust $ w ^? level.levelEntities.ix playerLevelID.status.position
+playerTestAttack w = return $ playerMoveMade $ w & unsafeThingByID pID.plannedAct %~ setAttack
+   where pID = w ^. player.playerEntityID
+         setAttack act = act & attacks .~ [testAttack pPos]
+         pPos = w ^. unsafeThingByID pID.status.position
 
 testAttack :: Position -> PlannedAttack
 testAttack pPos = (fstHitBox, sndHitBox)
