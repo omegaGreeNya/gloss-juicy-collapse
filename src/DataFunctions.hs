@@ -94,18 +94,18 @@ calcCameraPositionByPPos w = (cameraX, cameraY)
    where cSize = w ^. camera.cellSize
    
          levelXRsize = int2Float $ w ^. level.levelSize._1 * cSize
-         levelYRsize = int2Float . negate $ w ^. level.levelSize._2 * cSize
+         levelYRsize = int2Float $ w ^. level.levelSize._2 * cSize
          
          pTID = w ^. player.playerEntityID
          (pX, pY) = w ^. unsafeEntityByID pTID.status.position
          pRX = int2Float $ pX * cSize
-         pRY = int2Float . negate $ pY * cSize
+         pRY = int2Float $ pY * cSize
          
          halfWindowX = int2Float $ w ^. ui.windowSize._1 `div` 2
-         halfWindowY = int2Float . negate $ w ^. ui.windowSize._2 `div` 2
+         halfWindowY = int2Float $ w ^. ui.windowSize._2 `div` 2
          
          cameraX = min (max pRX halfWindowX) (levelXRsize - halfWindowX)
-         cameraY = max (min pRY halfWindowY) (levelYRsize + halfWindowY)
+         cameraY = negate $ min (max pRY halfWindowY) (levelYRsize + halfWindowY)
 
 -- | Ralatively to (0,0) cell
 calcCellPosition :: World -> Position -> RPosition
@@ -207,9 +207,9 @@ withZone' w x y xmin ymin xmax ymax action result | x < xmax = withZone' w (x + 
 
 -- << Time Related Functions
 getStateTime :: State -> Float
-getStateTime (BeforeMoves)      = 1
-getStateTime (Moves)            = 1
-getStateTime (AfterMoves)       = 1
+getStateTime (BeforeMoves)      = 0.5
+getStateTime (Moves)            = 0.5
+getStateTime (AfterMoves)       = 0.5
 getStateTime (PlayerThinkTime1) = 0.5
 getStateTime (PlayerThinkTime2) = 2
 
@@ -221,10 +221,10 @@ turnTime (PlayerThinkTime1) = getStateTime PlayerThinkTime1 + turnTime PlayerThi
 turnTime (PlayerThinkTime2) = getStateTime PlayerThinkTime2                               -- 2
 
 timeLeftedForMove :: State -> Float
-timeLeftedForMove s@(BeforeMoves)      = 0.5 * turnTime s
-timeLeftedForMove s@(Moves)            = 0.5 * turnTime s
-timeLeftedForMove s@(AfterMoves)       = 0.5 * turnTime s
-timeLeftedForMove s@(PlayerThinkTime1) = turnTime s
+timeLeftedForMove s@(BeforeMoves)      = 0.2 * turnTime s
+timeLeftedForMove s@(Moves)            = 0.2 * turnTime s
+timeLeftedForMove s@(AfterMoves)       = 0.2 * turnTime s
+timeLeftedForMove s@(PlayerThinkTime1) = 0.4 * turnTime s
 timeLeftedForMove s@(PlayerThinkTime2) = turnTime s
 
 ticks2time :: World -> Tick -> Float

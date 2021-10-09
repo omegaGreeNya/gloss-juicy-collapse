@@ -77,6 +77,7 @@ playerPlannedMove w = Color aquamarine $ Line [curPPosR, nxtPPosR]
          
          curPPos = p ^. status.position
          curPPosR = mapPos2ScreenPos w curPPos
+         
          nxtPPos = nextP ^. status.position
          nxtPPosR = mapPos2ScreenPos w nxtPPos
          
@@ -149,13 +150,12 @@ entities2hpPic w entities = foldMap (entity2hpPic w) entities
 
 entity2hpPic :: World -> Thing -> Picture
 entity2hpPic w e = Color green $ Translate x' y' $ Line linePath
-   where ePos = e ^. status.position
-         (x, y) = e ^. renderData.rPosition
+   where (x, y) = e ^. renderData.rPosition
          
-         (xCell, yCell) = (\(a, b) -> (int2Float a, int2Float b)) $ w ^. ui.windowSize
+         cell = int2Float $ w ^. camera.cellSize
          
-         x' = x - xCell/2
-         y' = y + yCell/2 - 10
+         x' = x - cell/2
+         y' = y + cell/2 - 10
          
          dID = e ^. dataID
          
@@ -164,7 +164,7 @@ entity2hpPic w e = Color green $ Translate x' y' $ Line linePath
          eMaxHP = maybe 0 int2Float mMaxHP
          eHP = e ^. status.hp
          
-         hpLineLength = eHP/eMaxHP * xCell
+         hpLineLength = eHP/eMaxHP * cell
          linePath = [(0, 0), (hpLineLength, 0)]
          
          

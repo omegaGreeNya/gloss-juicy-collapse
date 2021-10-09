@@ -22,7 +22,15 @@ testLevel = Map levelMap ents objs (10,10)
    where levelMap = list2map myMap
          ents = Vector.fromList [Entity (EntityDataID 0) (EntityStatus 100 (0, 0)) noneAct noneThingR
                                 ,Entity (EntityDataID 1) (EntityStatus 100 (1, 1)) noneAct noneThingR]
-         objs =  Vector.fromList []
+         objs =  Vector.fromList [Object (ObjectDataID 0) (ObjectStatus 100 (3, 1)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (2, 2)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (3, 2)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (4, 2)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (3, 3)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (2, 4)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (4, 4)) noneThingR
+                                 ,Object (ObjectDataID 0) (ObjectStatus 100 (9, 9)) noneThingR
+                                 ]
 
 noneThingR :: ThingR
 noneThingR = ThingR (25, 25) (0, 0) True
@@ -30,16 +38,18 @@ noneThingR = ThingR (25, 25) (0, 0) True
 playerStart :: Player
 playerStart = Player (EntityID 0)
 
+
 myMap = [[[EntityID 0], [], [], [], [], [], [], [], [], []]
-        ,[[], [EntityID 1], [], [], [], [], [], [], [], []]
+        ,[[], [EntityID 1], [], [ObjectID 2], [], [], [], [], [], []]
+        ,[[], [], [ObjectID 1], [ObjectID 0], [ObjectID 3], [], [], [], [], []]
+        ,[[], [], [], [ObjectID 4], [], [], [], [], [], []]
+        ,[[], [], [ObjectID 5], [], [ObjectID 6], [], [], [], [], []]
         ,[[], [], [], [], [], [], [], [], [], []]
         ,[[], [], [], [], [], [], [], [], [], []]
         ,[[], [], [], [], [], [], [], [], [], []]
         ,[[], [], [], [], [], [], [], [], [], []]
-        ,[[], [], [], [], [], [], [], [], [], []]
-        ,[[], [], [], [], [], [], [], [], [], []]
-        ,[[], [], [], [], [], [], [], [], [], []]
-        ,[[], [], [], [], [], [], [], [], [], []]]
+        ,[[], [], [], [], [], [], [], [], [], [ObjectID 7]]]
+
 
 -- to MapLoading module
 
@@ -50,4 +60,4 @@ initialUI :: UI
 initialUI = UI (800, 600) 60
 
 initialCamera :: Camera
-initialCamera = Camera (400, -300) 50 (0, 0)
+initialCamera = Camera (400, -300) 100 (0, 0)

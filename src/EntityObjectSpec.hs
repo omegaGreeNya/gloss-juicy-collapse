@@ -102,7 +102,7 @@ entities2Load :: EntitiesSpec
 entities2Load = [playerSpec, dummy]
 
 objects2Load  :: ObjectsSpec
-objects2Load  = []
+objects2Load  = [clownTile]
 
 
 -----------------------Loading Bits----------------------------
@@ -116,3 +116,8 @@ dummy :: ThingSpec
 dummy = EntitySpec playerStats playerPic
    where playerStats = EntityStats 1 "Dummy" 100
          playerPic = "undefined"
+
+clownTile :: ThingSpec
+clownTile = ObjectSpec stats pic
+   where stats = ObjectStats 0 "clownTile" 100
+         pic = "data/tiles/clown-tile.png"

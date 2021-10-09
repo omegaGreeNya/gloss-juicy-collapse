@@ -42,7 +42,7 @@ plannedAct = lens getter setter
 data Map = Map { _thingsMap     :: Vector (Vector (Set ThingID))  -- 2D array of !this level! things IDs
                , _levelEntities :: Vector Thing                   -- AI/Player specIDs and statuses
                , _levelObjects  :: Vector Thing                   -- Walls/Floors/etc. - everything unactionable
-               , _levelSize       :: (Int, Int)
+               , _levelSize     :: (Int, Int)
                }
 makeLenses ''Map
 

@@ -13,7 +13,7 @@ import DataFunctions
 timeUpdate :: Float -> World -> World
 timeUpdate time w = w & entitiesOnScreen %~ (updateScreenPosByTime time)
                       & objectsOnScreen  %~ (updateScreenPosByTime time)
-                      {-& camera           %~ (updateCameraPosition time)-}
+                      & camera           %~ (updateCameraPosition time)
 
 entitiesOnScreen :: Traversal' World ThingR
 entitiesOnScreen = allLevelEntities.filtered isOnScreen.renderData
@@ -35,7 +35,7 @@ updateCameraPosition time c@(Camera pos _ (xShift, yShift)) =
 
 -- <<< Shift update
 updateShiftings :: Float -> World -> World
-updateShiftings time = updateThingsShiftPerSec time {-. updateCameraShiftPerSec time-}
+updateShiftings time = updateThingsShiftPerSec time . updateCameraShiftPerSec time
 
 updateCameraShiftPerSec :: Float -> World -> World
 updateCameraShiftPerSec leftedTime w = w & camera.shiftPerSec .~ newShiftPerSec
