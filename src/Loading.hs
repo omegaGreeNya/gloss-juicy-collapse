@@ -15,10 +15,10 @@ initialWorld :: IO World
 initialWorld = loadAllData >>= \thingsData -> return $ World playerStart testLevel [] thingsData 0 initialWorldState initialUI initialCamera
 
 initialWorldState :: WorldState
-initialWorldState = WorldState 1 False PlayerThinkTime2
+initialWorldState = WorldState 1 1000 False PlayerThinkTime2
 
 testLevel :: Map
-testLevel = Map levelMap ents objs (10,10)
+testLevel = Map levelMap ents objs (100,100)
    where levelMap = list2map myMap
          ents = Vector.fromList [Entity (EntityDataID 0) (EntityStatus 100 (0, 0)) noneAct noneThingR
                                 ,Entity (EntityDataID 1) (EntityStatus 100 (1, 1)) noneAct noneThingR]
@@ -60,4 +60,4 @@ initialUI :: UI
 initialUI = UI (800, 600) 60
 
 initialCamera :: Camera
-initialCamera = Camera (400, -300) 100 (0, 0)
+initialCamera = Camera (400, -300) 64 (0, 0) 1

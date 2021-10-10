@@ -30,7 +30,8 @@ world2Picture w = return $ gridPic w
                         <> test2 w
                         <> test3 w
                         <> showPR w
-                        <> debugINFO w
+                        <> showCamR w
+                        -- <> debugINFO w
    
 tickRep :: World -> Picture
 tickRep w = Translate 0 200 $ Scale 0.1 0.1 $ Text $ show $ w ^. tick
@@ -45,27 +46,30 @@ thingID2Pic w tID = thing2Pic w $ w ^. unsafeThingByID tID
 
 thing2Pic :: World -> Thing -> Picture
 thing2Pic w t = Translate x y
+              $ Scale scale scale
               $ tPic
    where dID = t ^. dataID
          tPic = w ^. unsafeThingDataByID dID.pic
          
          (x, y) = t ^. renderData.rPosition
+         
+         scale = w ^. camera.getScale
 -- >>
 
 -- <<
 gridPic :: World -> Picture
 gridPic w = Color black
           $ Pictures
-          $ map makeXLine [minX, minX + cellS .. maxX]
-          <> map makeYLine [minY, minY + cellS .. maxY]
+          $ map makeYLine [minX, minX + cellS .. maxX]
+          <> map makeXLine [maxY, maxY - cellS .. minY]
    where (xWindow, yWindow) = w ^. ui.windowSize
          minX = (int2Float xWindow)/(-2)
          maxX = negate minX
          minY = (int2Float yWindow)/(-2)
          maxY = negate minY
          
-         makeXLine x = Line [(x, minY), (x, maxY)]
-         makeYLine y = Line [(minX, y), (maxX, y)]
+         makeYLine x = Line [(x, minY), (x, maxY)]
+         makeXLine y = Line [(minX, y), (maxX, y)]
          
          cellS = int2Float $ w ^. camera.cellSize
 
@@ -80,7 +84,8 @@ playerPlannedMove w = Color aquamarine $ Line [curPPosR, nxtPPosR]
          
          nxtPPos = nextP ^. status.position
          nxtPPosR = mapPos2ScreenPos w nxtPPos
-         
+
+-- Rework this to get rid of ticks2time, pls?
 timeLine :: World -> Picture
 timeLine w = Translate lineWidthPos (lineHightPos w) (timeLine' w)
 
@@ -188,6 +193,11 @@ showPR :: World -> Picture
 showPR w = Translate (-400) (-200) $ Scale 0.1 0.1 $ Text $ show pTR
    where pTID = w ^. player.playerEntityID
          pTR = w ^. unsafeThingByID pTID.renderData
+
+showCamR :: World -> Picture
+showCamR w = Translate (-400) (-220) $ Scale 0.1 0.1 $ Text $ show camInfo
+   where camInfo = w ^. camera
+
 
 debugINFO :: World -> Picture
 debugINFO w = infoZone <> translate (worldStateINFO w)

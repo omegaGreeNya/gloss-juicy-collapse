@@ -7,17 +7,13 @@ import System.Exit (exitWith, ExitCode(ExitSuccess))
 
 import Loading
 import DataFunctions
+import ScreenUpdate
 
 itsPlayerTurn :: World -> Bool
 itsPlayerTurn w = case w ^. worldState.state of
                        PlayerThinkTime1 -> True
                        PlayerThinkTime2 -> True
                        _                -> False
-
-event2Update :: Event -> World -> IO World
-event2Update e w = if itsPlayerTurn w 
-                     then event2Update_ e w
-                     else return w 
 
 event2Update_ :: Event -> World -> IO World
 event2Update_ (EventKey (SpecialKey KeyRight) Down  _ _) w = movePlayer (1, 0) w
@@ -26,6 +22,8 @@ event2Update_ (EventKey (SpecialKey KeyUp)    Down  _ _) w = movePlayer (0, -1) 
 event2Update_ (EventKey (SpecialKey KeyDown)  Down  _ _) w = movePlayer (0, 1) w
 event2Update_ (EventKey (SpecialKey KeyEsc)   Down  _ _) w = exitWith ExitSuccess
 event2Update_ (EventKey (Char  'a'         )  Down  _ _) w = playerTestAttack w
+event2Update_ (EventKey (Char  '='         )  Down  _ _) w = return $ zoomIn w
+event2Update_ (EventKey (Char  '-'         )  Down  _ _) w = return $ zoomOut w
 event2Update_ _ w = return w
 
 

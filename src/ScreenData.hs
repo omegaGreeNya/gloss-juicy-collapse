@@ -19,6 +19,9 @@ shiftRPos (x, y) (dx, dy) = (x + dx, y + dy)
 rPosDiff :: RPosition -> RPosition -> RPositionShift
 rPosDiff (x1, y1) (x2, y2) = (x1 - x2, y1 - y2)
 
+rPosSum :: RPosition -> RPosition -> RPositionShift
+rPosSum (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
+
 calcShiftPerSec :: RPosition        -- current RPos
                 -> RPosition        -- target RPos
                 -> Float            -- lefted time
@@ -27,18 +30,25 @@ calcShiftPerSec currentP targetP leftedTime = (xShift / leftedTime, yShift / lef
    where (xShift, yShift) = rPosDiff targetP currentP
 
 combineShiftWithCameraShift :: RPositionShift -- main shift
-              -> RPositionShift -- shift to update
-              -> RPositionShift -- updated shift
+                            -> RPositionShift -- shift to update
+                            -> RPositionShift -- updated shift
 combineShiftWithCameraShift (cameraShiftX, cameraShiftY) (shiftX, shiftY) = (shiftX - cameraShiftX, shiftY - cameraShiftY)
 
+scaleRPosition :: Float -> RPosition -> RPosition
+scaleRPosition scale (x, y) = (x * scale, y * scale)
 
 
 
+
+maxZoom, minZoom :: Int
+maxZoom = 64
+minZoom = 32
 
 data Camera = Camera { _rPosition   :: RPosition        -- center of screen relatively to (0,0) mapPos
                      , _cellSize    :: Int              -- size of cell in pixels
                      , _shiftPerSec :: RPositionShift   -- camera movement
-                     }
+                     , _getScale    :: Float            -- pics scale (x1 - 64 pixels pics, x0.5 - 32 pixels)
+                     } deriving Show
 makeFieldsNoPrefix ''Camera
 
 

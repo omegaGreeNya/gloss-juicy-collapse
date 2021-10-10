@@ -58,6 +58,7 @@ data State = BeforeMoves
             deriving (Show, Eq, Enum, Bounded)
 
 data WorldState = WorldState { _leftedPhaseTicks :: Tick
+                             , _leftedPhaseTime  :: Float
                              , _playerMadeMove   :: Bool
                              , _state            :: State
                              }

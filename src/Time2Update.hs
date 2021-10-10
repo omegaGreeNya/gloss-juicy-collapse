@@ -21,6 +21,7 @@ time2Update :: Float -> World -> IO World
 time2Update timeToProceed w = do
       let nextTickW = w & tick +~ 1
                         & worldState.leftedPhaseTicks -~ 1
+                        & worldState.leftedPhaseTime  -~ timeToProceed
 
       case ticksLeft of
            0 -> return $ timeUpdate timeToProceed . zeroTicksUpdate $ nextTickW
@@ -29,6 +30,7 @@ time2Update timeToProceed w = do
    where ticksLeft = w ^. worldState.leftedPhaseTicks
 
 -- | Case of next Phase
+-- Reduce updateShiftings calls?
 zeroTicksUpdate :: World -> World         
 zeroTicksUpdate w =
       case nextState of
@@ -51,6 +53,7 @@ zeroTicksUpdate w =
          
          nextPhaseW = updatePlayerThinkPhase $ w & worldState.state .~ nextState
                                                  & worldState.leftedPhaseTicks .~ phaseTicks
+                                                 & worldState.leftedPhaseTime  .~ turnTimeLeft
          
          updatePlayerThinkPhase w = if nextState == BeforeMoves
                                        then w & worldState.playerMadeMove .~ False

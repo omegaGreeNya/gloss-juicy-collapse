@@ -15,7 +15,7 @@ main :: IO ()
 main = initialWorld >>= gameLoop >> print "Get Out!"
 
 gameLoop :: World -> IO ()
-gameLoop initialWorld = playIO (window initialWorld) background (fps initialWorld) initialWorld world2Picture event2Update time2Update
+gameLoop initialWorld = playIO (window initialWorld) background (fps initialWorld) initialWorld world2Picture event2Update_ time2Update
 
 
 {-

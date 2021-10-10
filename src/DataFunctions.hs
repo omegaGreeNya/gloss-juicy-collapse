@@ -206,26 +206,27 @@ withZone' w x y xmin ymin xmax ymax action result | x < xmax = withZone' w (x + 
 -- >>
 
 -- << Time Related Functions
+tBM, tM, tAM, tPT1, tPT2 :: Float -- state time (t - time, STATE)
+tBM  = 0.4
+tM   = 0.2
+tAM  = 0.4
+tPT1 = 0.5
+tPT2 = 2
+
 getStateTime :: State -> Float
-getStateTime (BeforeMoves)      = 0.5
-getStateTime (Moves)            = 0.5
-getStateTime (AfterMoves)       = 0.5
-getStateTime (PlayerThinkTime1) = 0.5
-getStateTime (PlayerThinkTime2) = 2
+getStateTime (BeforeMoves)      = tBM
+getStateTime (Moves)            = tM
+getStateTime (AfterMoves)       = tAM 
+getStateTime (PlayerThinkTime1) = tPT1
+getStateTime (PlayerThinkTime2) = tPT2
 
-turnTime :: State -> Float
-turnTime (BeforeMoves)      = getStateTime BeforeMoves + turnTime Moves                   -- 5.5
-turnTime (Moves)            = getStateTime Moves + turnTime AfterMoves                    -- 4.5
-turnTime (AfterMoves)       = getStateTime AfterMoves + turnTime PlayerThinkTime1         -- 3.5
-turnTime (PlayerThinkTime1) = getStateTime PlayerThinkTime1 + turnTime PlayerThinkTime2   -- 2.5
-turnTime (PlayerThinkTime2) = getStateTime PlayerThinkTime2                               -- 2
+timeLeftedForMove :: State -> Float                                           -- Slow Motion multiplier
+timeLeftedForMove (BeforeMoves)      = tBM                                    -- x1
+timeLeftedForMove (Moves)            = tM + tAM + tPT1 / 4 + tPT2 / 8 + tBM   -- x1
+timeLeftedForMove (AfterMoves)       = tAM + tPT1 / 4 + tPT2 / 8 + tBM        -- x1
+timeLeftedForMove (PlayerThinkTime1) = tPT1 + tPT2 / 2 + tBM * 4              -- x4
+timeLeftedForMove (PlayerThinkTime2) = tPT2 + tBM * 8                         -- x8
 
-timeLeftedForMove :: State -> Float
-timeLeftedForMove s@(BeforeMoves)      = 0.2 * turnTime s
-timeLeftedForMove s@(Moves)            = 0.2 * turnTime s
-timeLeftedForMove s@(AfterMoves)       = 0.2 * turnTime s
-timeLeftedForMove s@(PlayerThinkTime1) = 0.4 * turnTime s
-timeLeftedForMove s@(PlayerThinkTime2) = turnTime s
 
 ticks2time :: World -> Tick -> Float
 ticks2time w t = int2Float t / int2Float ticksPerSec

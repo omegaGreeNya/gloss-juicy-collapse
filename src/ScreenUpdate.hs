@@ -1,9 +1,12 @@
 module ScreenUpdate ( timeUpdate
                     , updateShiftings
                     , updateOnScreenStatuses
+                    , zoomIn
+                    , zoomOut
                     ) where
 
 import Control.Lens
+import GHC.Float (int2Float)
 
 import DataFunctions
 
@@ -28,12 +31,13 @@ updateScreenPosByTime time tR@(ThingR rPos (xShift, yShift) isOnScreen) =
          else tR
 
 updateCameraPosition :: Float -> Camera -> Camera
-updateCameraPosition time c@(Camera pos _ (xShift, yShift)) = 
+updateCameraPosition time c@(Camera pos _ (xShift, yShift) _) = 
       let newPos = shiftRPos pos (xShift * time, yShift * time)
        in c & rPosition .~ newPos 
 -- >>>
 
 -- <<< Shift update
+-- <<
 updateShiftings :: Float -> World -> World
 updateShiftings time = updateThingsShiftPerSec time . updateCameraShiftPerSec time
 
@@ -43,7 +47,7 @@ updateCameraShiftPerSec leftedTime w = w & camera.shiftPerSec .~ newShiftPerSec
          targetPos  = calcCameraPositionByPPos w
          
          newShiftPerSec = calcShiftPerSec currentPos targetPos leftedTime
-
+-- >>
 
 -- <<
 updateThingsShiftPerSec :: Float -> World -> World
@@ -102,4 +106,41 @@ updateOnScreenStatus w tR@(ThingR _ _ isOnScreen) t =
 
 setOnScreen :: RPosition -> ThingR
 setOnScreen rPos = ThingR rPos (0, 0) True -- RPositionShift should be assigned somethere else!!
+-- >>>
+
+-- <<< Camera related functions
+-- <<
+zoomIn :: World -> World
+zoomIn w | zoom == maxZoom = w
+         | otherwise       = updateShiftings turnTimeLeft . zoomRUpdate 2 $ w & camera.cellSize .~ maxZoom
+                                                                              & camera.getScale .~ 1
+   where zoom = w ^. camera.cellSize
+         turnTimeLeft = w ^. worldState.leftedPhaseTime
+-- >>
+
+-- <<
+zoomOut :: World -> World
+zoomOut w | zoom == minZoom = w
+          | otherwise       = updateShiftings turnTimeLeft . zoomRUpdate 0.5 $ w & camera.cellSize .~ minZoom
+                                                                                 & camera.getScale .~ 0.5
+   where zoom = w ^. camera.cellSize
+         turnTimeLeft = w ^. worldState.leftedPhaseTime
+-- >>
+
+-- <<
+-- ALЯRM! Camera CellSize MUST BE Updatete before call of this function
+zoomRUpdate :: Float -> World -> World
+zoomRUpdate scale w = processZone w renderZone updateThingRPos
+   where newCamPosW = w & camera.rPosition .~ newCamPos
+         renderZone = getRenderingZone w
+         
+         currentCamPos = w ^. camera.rPosition
+         newCamPos = calcCameraPositionByPPos w
+         shiftForThingsOnScreen = rPosDiff currentCamPos newCamPos
+         updateThingRPos w tID = w & unsafeThingByID tID.renderData.rPosition
+                                   %~ flip shiftRPos shiftForThingsOnScreen . updateRPos
+         
+         vecToLeftUpCorner = (\(x, y) -> (negate (int2Float x / 2), int2Float y / 2)) $ w ^. ui.windowSize
+         updateRPos rPos = rPosSum vecToLeftUpCorner . scaleRPosition scale $ rPosDiff rPos vecToLeftUpCorner
+-- >>
 -- >>>
