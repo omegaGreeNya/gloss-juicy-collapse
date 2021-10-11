@@ -81,9 +81,9 @@ getThingOutOfScreen :: World -> Thing -> Thing
 getThingOutOfScreen w t = if inZone
                               then t
                               else t & renderData.onScreen .~ False
-   where zonePositions = getRenderingZone w
+   where renderZone = getRenderingZone w
          tPos = t ^. status.position
-         inZone = isInZone zonePositions tPos
+         inZone = isInZone renderZone tPos
          
 -- >>
 
@@ -112,8 +112,9 @@ setOnScreen rPos = ThingR rPos (0, 0) True -- RPositionShift should be assigned 
 -- <<
 zoomIn :: World -> World
 zoomIn w | zoom == maxZoom = w
-         | otherwise       = updateShiftings turnTimeLeft . zoomRUpdate 2 $ w & camera.cellSize .~ maxZoom
-                                                                              & camera.getScale .~ 1
+         | otherwise       = updateShiftings turnTimeLeft . updateOnScreenStatuses
+                           . zoomRUpdate 2 $ w & camera.cellSize .~ maxZoom
+                                               & camera.getScale .~ 1
    where zoom = w ^. camera.cellSize
          turnTimeLeft = w ^. worldState.leftedPhaseTime
 -- >>
@@ -121,8 +122,9 @@ zoomIn w | zoom == maxZoom = w
 -- <<
 zoomOut :: World -> World
 zoomOut w | zoom == minZoom = w
-          | otherwise       = updateShiftings turnTimeLeft . zoomRUpdate 0.5 $ w & camera.cellSize .~ minZoom
-                                                                                 & camera.getScale .~ 0.5
+          | otherwise       = updateShiftings turnTimeLeft . updateOnScreenStatuses
+                            . zoomRUpdate 0.5 $ w & camera.cellSize .~ minZoom
+                                                  & camera.getScale .~ 0.5
    where zoom = w ^. camera.cellSize
          turnTimeLeft = w ^. worldState.leftedPhaseTime
 -- >>
