@@ -129,8 +129,9 @@ zoomOut w | zoom == minZoom = w
 
 -- <<
 -- ALЯRM! Camera CellSize MUST BE Updatete before call of this function
+-- Im reaaly don't know why, but it's work (Maybe i should get at least 8 hrs of sleep? pls)
 zoomRUpdate :: Float -> World -> World
-zoomRUpdate scale w = processZone w renderZone updateThingRPos
+zoomRUpdate scale w = processZone newCamPosW renderZone updateThingRPos
    where newCamPosW = w & camera.rPosition .~ newCamPos
          renderZone = getRenderingZone w
          
@@ -140,7 +141,7 @@ zoomRUpdate scale w = processZone w renderZone updateThingRPos
          updateThingRPos w tID = w & unsafeThingByID tID.renderData.rPosition
                                    %~ flip shiftRPos shiftForThingsOnScreen . updateRPos
          
-         vecToLeftUpCorner = (\(x, y) -> (negate (int2Float x / 2), int2Float y / 2)) $ w ^. ui.windowSize
+         vecToLeftUpCorner = (\(x, y) -> (negate x, negate y)) currentCamPos
          updateRPos rPos = rPosSum vecToLeftUpCorner . scaleRPosition scale $ rPosDiff rPos vecToLeftUpCorner
 -- >>
 -- >>>
