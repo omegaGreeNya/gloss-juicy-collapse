@@ -85,7 +85,6 @@ playerPlannedMove w = Color aquamarine $ Line [curPPosR, nxtPPosR]
          nxtPPos = nextP ^. status.position
          nxtPPosR = mapPos2ScreenPos w nxtPPos
 
--- Rework this to get rid of ticks2time, pls?
 timeLine :: World -> Picture
 timeLine w = Translate lineWidthPos (lineHightPos w) (timeLine' w)
 
@@ -94,11 +93,11 @@ timeLine' w = case currentState of
                    PlayerThinkTime1 -> Color cyan $ Line linePath
                    PlayerThinkTime2 -> Color red  $ Line linePath
                    _                -> Blank
-   where currentState = w ^. worldState.state
+   where currentState = w ^. worldState.phase
          
-         maxTime = getStateTime currentState
+         maxTime = getPhaseTime currentState w
          
-         timeUsed = (maxTime -) . ticks2time w $ w ^. worldState.leftedPhaseTicks
+         timeUsed = (maxTime -) $ w ^. worldState.leftedPhaseTime
          
          actualLineLength = (timeUsed / maxTime) * lineLength
          
@@ -221,5 +220,5 @@ debugINFO w = infoZone <> translate (worldStateINFO w)
 worldStateINFO :: World -> Picture
 worldStateINFO w = (Translate 0 0 $ Scale 0.1 0.1 $ Text leftedTicks)
                 <> (Translate 0 (-15) $ Scale 0.1 0.1 $ Text state_)
-   where state_ = "state: " <> (show $ w ^. worldState.state)
+   where state_ = "state: " <> (show $ w ^. worldState.phase)
          leftedTicks = "ticksLeft: " <> (show $ w ^. worldState.leftedPhaseTicks)

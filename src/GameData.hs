@@ -47,20 +47,31 @@ data Map = Map { _thingsMap     :: Vector (Vector (Set ThingID))  -- 2D array of
 makeLenses ''Map
 
 data Player = Player { _playerEntityID :: ThingID
+                     --, _pressedKeys    :: 
                      } 
 makeLenses ''Player
 
-data State = BeforeMoves
+data Phase = BeforeMoves
            | Moves
            | AfterMoves
            | PlayerThinkTime1
            | PlayerThinkTime2
             deriving (Show, Eq, Enum, Bounded)
 
-data WorldState = WorldState { _leftedPhaseTicks :: Tick
-                             , _leftedPhaseTime  :: Float
-                             , _playerMadeMove   :: Bool
-                             , _state            :: State
+data Temp = Temp { _bm :: Float -- time for beforeMoves phases
+                 , _m :: Float -- time for moves phases
+                 , _am :: Float -- time for afterMoves phases
+                 , _ptt1 :: Float -- time for 1st player think phases
+                 , _ptt2 :: Float -- time for 2nd player think phases
+                 }
+makeLenses ''Temp
+
+data WorldState = WorldState { _leftedPhaseTicks :: Tick    -- ticks before next state
+                             , _leftedTurnTime   :: Float   -- Time for shift calculation
+                             , _leftedPhaseTime  :: Float   -- Time lefted for phase
+                             , _playerMadeMove   :: Bool    -- If true, than next think phase whould be skipped
+                             , _phase            :: Phase   -- Current phase
+                             , _temp             :: Temp    -- Phase timings
                              }
 makeLenses ''WorldState
 

@@ -4,26 +4,42 @@ import Control.Lens
 import Graphics.Gloss.Interface.IO.Interact
 import Data.Maybe (fromJust)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
+import qualified Data.Map.Strict as Map (Map, fromList, lookup)
 
 import Loading
 import DataFunctions
 import ScreenUpdate
 
-itsPlayerTurn :: World -> Bool
-itsPlayerTurn w = case w ^. worldState.state of
-                       PlayerThinkTime1 -> True
-                       PlayerThinkTime2 -> True
-                       _                -> False
+keyMapDown :: Map.Map Key (World -> IO World)
+keyMapDown = Map.fromList [ (SpecialKey KeyEnd     , movePlayer (-1, 1))
+                          , (SpecialKey KeyDown    , movePlayer (0, 1))
+                          , (SpecialKey KeyPageDown, movePlayer (1, 1))
+                          , (SpecialKey KeyLeft    , movePlayer (-1, 0))
+                          , (Char '\f'             , movePlayer (0, 0))
+                          , (SpecialKey KeyRight   , movePlayer (1, 0))
+                          , (SpecialKey KeyHome    , movePlayer (-1, -1))
+                          , (SpecialKey KeyUp      , movePlayer (0, -1))
+                          , (SpecialKey KeyPageUp  , movePlayer (1, -1))
+                          , (SpecialKey KeyEsc, \_ -> exitWith ExitSuccess)
+                          , (Char  'a', playerTestAttack)
+                          , (Char  '=', return . zoomIn)
+                          , (Char  '-', return . zoomOut)
+                          , (Char  'p', return . setTemp ultraFastTemp)
+                          , (Char  '[', return . setTemp normalTemp)
+                          , (Char  ']', return . setTemp slowTemp)
+                          ]
+keyMapUp :: Map.Map Key (World -> IO World)
+keyMapUp = Map.fromList [(Char '\f', movePlayer (0, 0))]
 
 event2Update_ :: Event -> World -> IO World
-event2Update_ (EventKey (SpecialKey KeyRight) Down  _ _) w = movePlayer (1, 0) w
-event2Update_ (EventKey (SpecialKey KeyLeft)  Down  _ _) w = movePlayer (-1, 0) w
-event2Update_ (EventKey (SpecialKey KeyUp)    Down  _ _) w = movePlayer (0, -1) w
-event2Update_ (EventKey (SpecialKey KeyDown)  Down  _ _) w = movePlayer (0, 1) w
-event2Update_ (EventKey (SpecialKey KeyEsc)   Down  _ _) w = exitWith ExitSuccess
-event2Update_ (EventKey (Char  'a'         )  Down  _ _) w = playerTestAttack w
-event2Update_ (EventKey (Char  '='         )  Down  _ _) w = return $ zoomIn w
-event2Update_ (EventKey (Char  '-'         )  Down  _ _) w = return $ zoomOut w
+event2Update_ (EventKey pressedKey Down  _ _) w =
+                                               case Map.lookup pressedKey keyMapDown of
+                                                               Nothing -> return w
+                                                               Just act -> act w
+event2Update_ (EventKey pressedKey Up  _ _) w =
+                                               case Map.lookup pressedKey keyMapUp of
+                                                               Nothing -> return w
+                                                               Just act -> act w
 event2Update_ _ w = return w
 
 

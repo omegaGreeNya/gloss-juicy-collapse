@@ -44,7 +44,7 @@ updateShiftings time = updateThingsShiftPerSec time . updateCameraShiftPerSec ti
 updateCameraShiftPerSec :: Float -> World -> World
 updateCameraShiftPerSec leftedTime w = w & camera.shiftPerSec .~ newShiftPerSec
    where currentPos = getCameraPosition w
-         targetPos  = calcCameraPositionByPPos w
+         targetPos  = calcCameraRPositionByPPos w
          
          newShiftPerSec = calcShiftPerSec currentPos targetPos leftedTime
 -- >>
@@ -89,10 +89,10 @@ getThingOutOfScreen w t = if inZone
 
 -- << only adds things on screen (Watch out about SHIFTPERSEC!!!)
 updateOnScreenStatusZone :: World -> World
-updateOnScreenStatusZone w = processZone w screenZone setOnScreen
+updateOnScreenStatusZone w = processZone w screenZone updateOnScreen
    where screenZone = getRenderingZone w
          
-         setOnScreen w tID = let tR = w ^. unsafeThingByID tID.renderData
+         updateOnScreen w tID = let tR = w ^. unsafeThingByID tID.renderData
                               in w & unsafeThingByID tID %~ updateOnScreenStatus w tR
 
 updateOnScreenStatus :: World -> ThingR -> Thing -> Thing
@@ -138,7 +138,7 @@ zoomRUpdate scale w = processZone newCamPosW renderZone updateThingRPos
          renderZone = getRenderingZone w
          
          currentCamPos = w ^. camera.rPosition
-         newCamPos = calcCameraPositionByPPos w
+         newCamPos = calcCameraRPositionByPPos w
          shiftForThingsOnScreen = rPosDiff currentCamPos newCamPos
          updateThingRPos w tID = w & unsafeThingByID tID.renderData.rPosition
                                    %~ flip shiftRPos shiftForThingsOnScreen . updateRPos

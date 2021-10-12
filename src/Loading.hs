@@ -15,7 +15,7 @@ initialWorld :: IO World
 initialWorld = loadAllData >>= \thingsData -> return $ World playerStart testLevel [] thingsData 0 initialWorldState initialUI initialCamera
 
 initialWorldState :: WorldState
-initialWorldState = WorldState 1 1000 False PlayerThinkTime2
+initialWorldState = WorldState 1 1000 1000 False PlayerThinkTime2 normalTemp
 
 testLevel :: Map
 testLevel = Map levelMap ents objs (100,100)
@@ -40,8 +40,8 @@ playerStart = Player (EntityID 0)
 
 
 myMap = [[[EntityID 0], [], [], [], [], [], [], [], [], []]
-        ,[[], [EntityID 1], [], [ObjectID 2], [], [], [], [], [], []]
-        ,[[], [], [ObjectID 1], [ObjectID 0], [ObjectID 3], [], [], [], [], []]
+        ,[[], [EntityID 1], [], [ObjectID 0], [], [], [], [], [], []]
+        ,[[], [], [ObjectID 1], [ObjectID 2], [ObjectID 3], [], [], [], [], []]
         ,[[], [], [], [ObjectID 4], [], [], [], [], [], []]
         ,[[], [], [ObjectID 5], [], [ObjectID 6], [], [], [], [], []]
         ,[[], [], [], [], [], [], [], [], [], []]

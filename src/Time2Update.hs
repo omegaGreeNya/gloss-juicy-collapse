@@ -22,6 +22,7 @@ time2Update timeToProceed w = do
       let nextTickW = w & tick +~ 1
                         & worldState.leftedPhaseTicks -~ 1
                         & worldState.leftedPhaseTime  -~ timeToProceed
+                        & worldState.leftedTurnTime   -~ timeToProceed
 
       case ticksLeft of
            0 -> return $ timeUpdate timeToProceed . zeroTicksUpdate $ nextTickW
@@ -43,7 +44,7 @@ zeroTicksUpdate w =
            
            
                   
-   where currentState = w ^. worldState.state
+   where currentState = w ^. worldState.phase
          
          nextState | (currentState == PlayerThinkTime1) 
                                     && playerMoveReady = BeforeMoves 
@@ -51,13 +52,15 @@ zeroTicksUpdate w =
          
          playerMoveReady = w ^. worldState.playerMadeMove
          
-         nextPhaseW = updatePlayerThinkPhase $ w & worldState.state .~ nextState
+         nextPhaseW = updatePlayerThinkPhase $ w & worldState.phase            .~ nextState
                                                  & worldState.leftedPhaseTicks .~ phaseTicks
-                                                 & worldState.leftedPhaseTime  .~ turnTimeLeft
+                                                 & worldState.leftedTurnTime   .~ turnTimeLeft
+                                                 & worldState.leftedPhaseTime  .~ phaseTimeLeft
          
          updatePlayerThinkPhase w = if nextState == BeforeMoves
                                        then w & worldState.playerMadeMove .~ False
                                        else w
          
-         turnTimeLeft = timeLeftedForMove nextState
-         phaseTicks = truncate $ (getStateTime nextState) * (int2Float $ w ^. ui.tps)
+         turnTimeLeft  = timeLeftedForTurn nextState w
+         phaseTimeLeft = getPhaseTime nextState w
+         phaseTicks = truncate $ phaseTimeLeft * (int2Float $ w ^. ui.tps)

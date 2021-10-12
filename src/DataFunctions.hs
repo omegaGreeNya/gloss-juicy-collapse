@@ -10,16 +10,19 @@ module DataFunctions ( safeSucc
                      , allLevelEntities
                      , allLevelObjects
                      , getCameraPosition
-                     , calcCameraPositionByPPos
+                     , calcCameraRPositionByPPos
                      , mapPos2ScreenPos
                      , getRenderingZone
                      , isInZone
                      , isOnScreen
                      , processZone
                      , withZone
-                     , getStateTime
-                     , timeLeftedForMove
-                     , ticks2time
+                     , getPhaseTime
+                     , timeLeftedForTurn
+                     , setTemp
+                     , ultraFastTemp
+                     , normalTemp
+                     , slowTemp
                      , module RunTimeData
                      , module ScreenData
                      , module GameData
@@ -86,11 +89,16 @@ allLevelObjects :: Traversal' World Thing
 allLevelObjects = level.levelObjects.traversed
 -- >>
 -- <<< Screen Related Functions
+cameraRPos2Pos :: World -> RPosition -> Position
+cameraRPos2Pos w (rX, rY) = (update rX, update rY)
+   where cellSize_ = w ^. camera.cellSize
+         update x = truncate x `div` cellSize_
+
 getCameraPosition :: World -> RPosition
 getCameraPosition w = w ^. camera.rPosition
 
-calcCameraPositionByPPos :: World -> RPosition
-calcCameraPositionByPPos w = (cameraX, cameraY)
+calcCameraRPositionByPPos :: World -> RPosition
+calcCameraRPositionByPPos w = (cameraRX, cameraRY)
    where cSize = w ^. camera.cellSize
    
          levelXRsize = int2Float $ w ^. level.levelSize._1 * cSize
@@ -104,8 +112,11 @@ calcCameraPositionByPPos w = (cameraX, cameraY)
          halfWindowX = int2Float $ w ^. ui.windowSize._1 `div` 2
          halfWindowY = int2Float $ w ^. ui.windowSize._2 `div` 2
          
-         cameraX = min (max pRX halfWindowX) (levelXRsize - halfWindowX)
-         cameraY = negate $ min (max pRY halfWindowY) (levelYRsize + halfWindowY)
+         cameraRX = min (max pRX halfWindowX) (levelXRsize - halfWindowX)
+         cameraRY = negate $ min (max pRY halfWindowY) (levelYRsize + halfWindowY)
+
+calcCameraPositionByPPos :: World -> Position
+calcCameraPositionByPPos w = cameraRPos2Pos w $ calcCameraRPositionByPPos w
 
 -- | Ralatively to (0,0) cell
 calcCellPosition :: World -> Position -> RPosition
@@ -121,21 +132,21 @@ mapPos2ScreenPos w p = (thngX - camX, thngY - camY)
 
 getRenderingZone :: World -> (Position, Position)
 getRenderingZone w = ((xmin, ymin), (xmax, ymax))
-   where cellSize' = w ^. camera.cellSize
+   where (cX, cY) = calcCameraPositionByPPos w
+         
+         cellSize_ = w ^. camera.cellSize
+         
          (wx, wy)  = w ^. ui.windowSize
          
-         heightByCell = 1 + wy `div` cellSize'
-         widthByCell  = 1 + wx `div` cellSize'
-         
-         pTID = w ^. player.playerEntityID
-         (px, py) = w ^. unsafeEntityByID pTID.status.position
+         widthByCell  = 2 + wx `div` cellSize_
+         heightByCell = 2 + wy `div` cellSize_
          
          (maxXPos, maxYPos) = w ^. level.levelSize
          
-         xmin = max 0       (px - (widthByCell  `div` 2) - 2)
-         ymin = max 0       (py - (heightByCell `div` 2) - 2)
-         xmax = min maxXPos (px + (widthByCell  `div` 2) + 2)
-         ymax = min maxYPos (py + (heightByCell `div` 2) + 2)
+         xmin = max 0       (cX - (widthByCell  `div` 2) - 3)--  (+- just for render a bit more, than screen zone)
+         ymin = max 0       (cY - (heightByCell `div` 2) - 3)
+         xmax = min maxXPos (xmin + widthByCell + 2)
+         ymax = min maxYPos (ymin + heightByCell + 2)
 
 isInZone :: (Position, Position) -- Zone
          -> Position            -- Position to check entering in zone
@@ -205,30 +216,47 @@ withZone' w x y xmin ymin xmax ymax action result | x < xmax = withZone' w (x + 
          targetThingsIDs = w ^. level.thingsMap.ix x.ix y
 -- >>
 
--- << Time Related Functions
-tBM, tM, tAM, tPT1, tPT2 :: Float -- state time (t - time, STATE)
-tBM  = 0.4
-tM   = 0.2
-tAM  = 0.4
-tPT1 = 0.5
-tPT2 = 2
+-- <<< Time Related Functions
+tBM, tM, tAM :: Float -- state time (t - time, STATE)
+tBM  = 0.2
+tM   = 0.1
+tAM  = 0.2
 
-getStateTime :: State -> Float
-getStateTime (BeforeMoves)      = tBM
-getStateTime (Moves)            = tM
-getStateTime (AfterMoves)       = tAM 
-getStateTime (PlayerThinkTime1) = tPT1
-getStateTime (PlayerThinkTime2) = tPT2
+getPhaseTime :: Phase -> World -> Float
+getPhaseTime (BeforeMoves)      w = w ^. worldState.temp.bm
+getPhaseTime (Moves)            w = w ^. worldState.temp.m
+getPhaseTime (AfterMoves)       w = w ^. worldState.temp.am
+getPhaseTime (PlayerThinkTime1) w = w ^. worldState.temp.ptt1
+getPhaseTime (PlayerThinkTime2) w = w ^. worldState.temp.ptt2
 
-timeLeftedForMove :: State -> Float                                           -- Slow Motion multiplier
-timeLeftedForMove (BeforeMoves)      = tBM                                    -- x1
-timeLeftedForMove (Moves)            = tM + tAM + tPT1 / 4 + tPT2 / 8 + tBM   -- x1
-timeLeftedForMove (AfterMoves)       = tAM + tPT1 / 4 + tPT2 / 8 + tBM        -- x1
-timeLeftedForMove (PlayerThinkTime1) = tPT1 + tPT2 / 2 + tBM * 4              -- x4
-timeLeftedForMove (PlayerThinkTime2) = tPT2 + tBM * 8                         -- x8
+timeLeftedForTurn :: Phase -> World -> Float                                         -- Slowmotion multiplier
+timeLeftedForTurn state w =
+   case state of
+        BeforeMoves      -> bmTime                                                   -- x1
+        Moves            -> mTime + amTime + ptt1Time / 4 + ptt2Time / 8 + bmTime    -- x1
+        AfterMoves       -> amTime + ptt1Time / 4 + ptt2Time / 8 + bmTime            -- x1
+        PlayerThinkTime1 -> ptt1Time + ptt2Time / 2 + bmTime * 4                     -- x4
+        PlayerThinkTime2 -> ptt2Time + bmTime * 8                                    -- x8
+   
+   where bmTime    = w ^. worldState.temp.bm
+         mTime     = w ^. worldState.temp.m
+         amTime    = w ^. worldState.temp.am
+         ptt1Time  = w ^. worldState.temp.ptt1
+         ptt2Time  = w ^. worldState.temp.ptt2
+-- << Temp
+setTemp :: Temp -> World -> World
+setTemp newTemp w = w & worldState.temp .~ newTemp
 
+-- | Less time for player turn
+ultraFastTemp :: Temp
+ultraFastTemp = Temp 0.2 0.1 0.2 0.2 0.5
 
-ticks2time :: World -> Tick -> Float
-ticks2time w t = int2Float t / int2Float ticksPerSec
-   where ticksPerSec = w ^. ui.tps
--- >>
+-- | Standart timings
+normalTemp :: Temp 
+normalTemp = Temp 0.2 0.1 0.2 0.5 2
+
+-- | More time for 1st phase, less for second. More times for non player turn phases
+slowTemp :: Temp
+slowTemp = Temp 0.4 0.2 0.4 1 1.5
+-- >> 
+-- >>>
