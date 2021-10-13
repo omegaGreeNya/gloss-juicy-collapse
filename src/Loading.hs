@@ -4,7 +4,7 @@ import Data.Maybe (fromJust)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Data.Set (Set)
-import qualified Data.Set as Set (fromList)
+import qualified Data.Set as Set (fromList, empty)
 import Control.Lens
 
 
@@ -36,7 +36,7 @@ noneThingR :: ThingR
 noneThingR = ThingR (25, 25) (0, 0) True
 
 playerStart :: Player
-playerStart = Player (EntityID 0)
+playerStart = Player (EntityID 0) Set.empty
 
 
 myMap = [[[EntityID 0], [], [], [], [], [], [], [], [], []]

@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 module DataFunctions ( safeSucc
+                     , safeHead
                      , unsafeEntityByID
                      , unsafeObjectByID
                      , unsafeThingByID
@@ -23,6 +24,7 @@ module DataFunctions ( safeSucc
                      , ultraFastTemp
                      , normalTemp
                      , slowTemp
+                     , isKeyDown
                      , module RunTimeData
                      , module ScreenData
                      , module GameData
@@ -32,9 +34,11 @@ module DataFunctions ( safeSucc
                      ) where
 
 import Control.Lens
+import Graphics.Gloss.Interface.IO.Interact (Key(..))
 import GHC.Float (int2Float)
 import Data.Maybe (fromJust)
 import Data.Foldable (foldl')
+import qualified Data.Set as Set (member)
 
 import GameData
 import ActionsData
@@ -49,6 +53,13 @@ safeSucc :: (Eq a, Enum a, Bounded a) => a -> a
 safeSucc a | a == maxBound = minBound
            | otherwise     = succ a
 -- >>
+
+-- <<
+safeHead :: [a] -> Maybe a
+safeHead []    = Nothing
+safeHead (x:_) = Just x
+-- >>
+
 -- <<
 unsafeEntityByID :: ThingID -> Lens' World Thing
 unsafeEntityByID (EntityID x) = lens getter setter
@@ -260,3 +271,7 @@ slowTemp :: Temp
 slowTemp = Temp 0.4 0.2 0.4 1 1.5
 -- >> 
 -- >>>
+
+-- <<< Keys/Input related functions
+isKeyDown :: Key -> World -> Bool
+isKeyDown key w = Set.member key $ w ^. player.pressedKeys 

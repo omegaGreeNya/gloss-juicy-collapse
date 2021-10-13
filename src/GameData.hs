@@ -15,6 +15,7 @@ import Data.Vector (Vector)
 import Data.Maybe (fromJust)
 import Data.Set (Set)
 import GHC.Float (int2Float)
+import Graphics.Gloss.Interface.IO.Interact (Key)
 
 import EntityObjectSpec
 import RunTimeData
@@ -47,7 +48,7 @@ data Map = Map { _thingsMap     :: Vector (Vector (Set ThingID))  -- 2D array of
 makeLenses ''Map
 
 data Player = Player { _playerEntityID :: ThingID
-                     --, _pressedKeys    :: 
+                     , _pressedKeys    :: Set Key
                      } 
 makeLenses ''Player
 

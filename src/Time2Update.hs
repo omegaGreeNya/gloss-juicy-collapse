@@ -2,10 +2,12 @@ module Time2Update (time2Update) where
 
 import Control.Lens
 import GHC.Float (int2Float)
+import qualified Data.Set as Set (null)
 
 import DataFunctions
 import Logic
 import ScreenUpdate
+import Input (pressedKeys2PlannedActions)
 -- | 1. Apply hits before moves
 -- | 2. Apply Moves
 -- | 3. Apply hits After moves
@@ -19,10 +21,12 @@ import ScreenUpdate
 
 time2Update :: Float -> World -> IO World
 time2Update timeToProceed w = do
-      let nextTickW = w & tick +~ 1
+      let nextTickW = pressedKeys2PlannedActions $
+                      w & tick +~ 1
                         & worldState.leftedPhaseTicks -~ 1
                         & worldState.leftedPhaseTime  -~ timeToProceed
                         & worldState.leftedTurnTime   -~ timeToProceed
+                        
 
       case ticksLeft of
            0 -> return $ timeUpdate timeToProceed . zeroTicksUpdate $ nextTickW
@@ -50,7 +54,7 @@ zeroTicksUpdate w =
                                     && playerMoveReady = BeforeMoves 
                    | otherwise                         = safeSucc currentState
          
-         playerMoveReady = w ^. worldState.playerMadeMove
+         playerMoveReady = not . Set.null $ w ^. player.pressedKeys
          
          nextPhaseW = updatePlayerThinkPhase $ w & worldState.phase            .~ nextState
                                                  & worldState.leftedPhaseTicks .~ phaseTicks

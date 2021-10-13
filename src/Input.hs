@@ -1,49 +1,72 @@
-module Input where
+-- | wtf with numpad keys??
+
+module Input ( event2Update
+             , pressedKeys2PlannedActions
+             ) where
 
 import Control.Lens
 import Graphics.Gloss.Interface.IO.Interact
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import System.Exit (exitWith, ExitCode(ExitSuccess))
-import qualified Data.Map.Strict as Map (Map, fromList, lookup)
+import qualified Data.Map.Strict as Map (Map, fromList, lookup, union, member)
+import qualified Data.Set as Set (insert, delete, member)
 
 import Loading
 import DataFunctions
 import ScreenUpdate
 
-keyMapDown :: Map.Map Key (World -> IO World)
-keyMapDown = Map.fromList [ (SpecialKey KeyEnd     , movePlayer (-1, 1))
-                          , (SpecialKey KeyDown    , movePlayer (0, 1))
-                          , (SpecialKey KeyPageDown, movePlayer (1, 1))
-                          , (SpecialKey KeyLeft    , movePlayer (-1, 0))
-                          , (Char '\f'             , movePlayer (0, 0))
-                          , (SpecialKey KeyRight   , movePlayer (1, 0))
-                          , (SpecialKey KeyHome    , movePlayer (-1, -1))
-                          , (SpecialKey KeyUp      , movePlayer (0, -1))
-                          , (SpecialKey KeyPageUp  , movePlayer (1, -1))
-                          , (SpecialKey KeyEsc, \_ -> exitWith ExitSuccess)
-                          , (Char  'a', playerTestAttack)
+moveKeys :: Map.Map Key PosShift
+moveKeys = Map.fromList moveKeysList
+
+moveKeysList :: [(Key, PosShift)]
+moveKeysList = [ (SpecialKey KeyEnd     , (-1, 1 ))
+               , (SpecialKey KeyDown    , (0 , 1 ))
+               , (SpecialKey KeyPageDown, (1 , 1 ))
+               , (SpecialKey KeyLeft    , (-1, 0 ))
+               , (Char '\f'             , (0 , 0 )) -- Num 5, need some workaround
+               , (SpecialKey KeyRight   , (1 , 0 ))
+               , (SpecialKey KeyHome    , (-1, -1))
+               , (SpecialKey KeyUp      , (0 , -1))
+               , (SpecialKey KeyPageUp  , (1 , -1))
+               ]
+
+systemKeys :: Map.Map Key (World -> IO World)
+systemKeys = Map.fromList [ (SpecialKey KeyEsc, \_ -> exitWith ExitSuccess)
                           , (Char  '=', return . zoomIn)
                           , (Char  '-', return . zoomOut)
                           , (Char  'p', return . setTemp ultraFastTemp)
                           , (Char  '[', return . setTemp normalTemp)
                           , (Char  ']', return . setTemp slowTemp)
                           ]
+
+attackKeys :: Map.Map Key (World -> IO World)--PlannedAttack
+attackKeys = Map.fromList [(Char  'a', playerTestAttack)
+                          ]
+
+alterKeys ::  Map.Map Key (World -> IO World) -- A bit of kastili
+alterKeys = Map.fromList [ (SpecialKey KeyAltL, return)
+                         , (SpecialKey KeyCtrlL, return)
+                         , (SpecialKey KeyShiftL, return)
+                         ]
+
+playerEntityKeysCheck :: Key -> Bool
+playerEntityKeysCheck key = Map.member key moveKeys 
+                         || Map.member key attackKeys
+
+{-
 keyMapUp :: Map.Map Key (World -> IO World)
 keyMapUp = Map.fromList [(Char '\f', movePlayer (0, 0))]
+-}
 
-event2Update_ :: Event -> World -> IO World
-event2Update_ (EventKey pressedKey Down  _ _) w =
-                                               case Map.lookup pressedKey keyMapDown of
-                                                               Nothing -> return w
-                                                               Just act -> act w
-event2Update_ (EventKey pressedKey Up  _ _) w =
-                                               case Map.lookup pressedKey keyMapUp of
-                                                               Nothing -> return w
-                                                               Just act -> act w
-event2Update_ _ w = return w
+event2Update :: Event -> World -> IO World
+event2Update (EventKey pressedKey  Down  _ _) w | isJust maybeSystemAct = (fromJust maybeSystemAct) w
+                                                | itsPlayerKey          = return $ w & player.pressedKeys %~ Set.insert pressedKey
+                                                | otherwise             = return w
+   where maybeSystemAct = Map.lookup pressedKey systemKeys
+         itsPlayerKey   = playerEntityKeysCheck pressedKey 
 
-
-playerLevelID = 0
+event2Update (EventKey releasedKey Up    _ _) w = return $ w & player.pressedKeys %~ Set.delete releasedKey
+event2Update _ w = return w
 
 movePlayer :: PosShift -> World -> IO World
 movePlayer posShift w = return $ playerMoveMade $ w & unsafeThingByID pID.plannedAct %~ updateAct
@@ -89,3 +112,23 @@ swOf (x, y) = (x - 1, y + 1)
 
 wOf :: Position -> Position
 wOf (x, y) = (x - 1, y)
+
+-- <<< Parsing pressed keys to player plannedActions
+pressedKeys2PlannedActions :: World -> World
+pressedKeys2PlannedActions w = w & unsafeThingByID pTID.plannedAct .~ actions
+   where actions = Action maybePosShift []
+         
+         maybePosShift = maybe Nothing (Just . snd) . safeHead
+            $ dropWhile (\(key,_) -> not $ isKeyDown key w) moveKeysList
+         
+         pTID   = w ^. player.playerEntityID
+         pThing = w ^. unsafeThingByID pTID
+         
+         
+         
+         
+         
+         altDown   = isKeyDown (SpecialKey KeyAltL  ) w 
+         ctrlDown  = isKeyDown (SpecialKey KeyCtrlL ) w 
+         shiftDown = isKeyDown (SpecialKey KeyShiftL) w 
+         
